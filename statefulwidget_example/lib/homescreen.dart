@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -10,6 +10,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   // the text entered by the user
   String enteredText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialization of state data
+  }
 
   @override
   Widget build(BuildContext context) {

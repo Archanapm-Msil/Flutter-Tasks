@@ -42,12 +42,14 @@ class RatingPageState extends State<RatingPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                const Text(
+                  Constants.rateTxt,
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                  textAlign: TextAlign.center,
+                ),
                 Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: SizedBox(
-                    width: 200, 
-                    child: _buildTextFiled()
-                  ),
+                  child: SizedBox(width: 200, child: _buildTextFiled()),
                 ),
                 RatingStar(rating: rating, size: 40),
               ],
@@ -58,18 +60,14 @@ class RatingPageState extends State<RatingPage> {
     );
   }
 
-TextField _buildTextFiled() {
-  return TextField(
+  TextField _buildTextFiled() {
+    return TextField(
       onChanged: (value) {
-        double ratingGiven =
-            double.tryParse(value) ?? 0.0;
-        BlocProvider.of<RatingBloc>(context)
-            .add(AddRating(ratingGiven));
+        double ratingGiven = double.tryParse(value) ?? 0.0;
+        BlocProvider.of<RatingBloc>(context).add(AddRating(ratingGiven));
       },
       inputFormatters: [
-        FilteringTextInputFormatter.allow(
-            RegExp(r'^([1-5]?(\.\d{0,1})?)$')
-          ),
+        FilteringTextInputFormatter.allow(RegExp(r'^([1-5]?(\.\d{0,1})?)$')),
       ],
       decoration: const InputDecoration(
         labelText: Constants.textfieldTxt,

@@ -1,7 +1,7 @@
 import 'package:contact_app/APIServiceManager/contact_api_service.dart';
-import 'package:contact_app/ContactBloc/contact_bloc.dart';
-import 'package:contact_app/ContactBloc/contact_event.dart';
-import 'package:contact_app/screens/contact_screen.dart';
+import 'package:contact_app/bloc/ContactBloc/contact_bloc.dart';
+import 'package:contact_app/bloc/WatchlistBloc/watchlist_bloc.dart';
+import 'package:contact_app/screens/watchlist_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -14,22 +14,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider(
-      create: (context) => ContactAPI(),
-      child: BlocProvider(
-        create: (context) => ContactBloc(
-          RepositoryProvider.of<ContactAPI>(context),
-        )..add(FetchContacts()),
-        child: MaterialApp(
-          title: 'Conatct List',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-            useMaterial3: true,
-          ),
-          home: const ContactScreen(),
+    return MaterialApp(
+        title: 'Watchlist App',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
         ),
-      ),
-    );
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<WatchlistBloc>(create: (_) => WatchlistBloc()),
+            BlocProvider<ContactBloc>(create: (_) => ContactBloc(ContactAPI())),
+
+          ],
+          child: const MaterialApp(
+            home: WatchlistScreen(),
+          ),
+        ));
   }
 }

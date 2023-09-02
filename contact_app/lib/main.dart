@@ -25,8 +25,8 @@ class MyApp extends StatelessWidget {
             BlocProvider<ContactBloc>(create: (_) => ContactBloc(ContactAPI())),
 
           ],
-          child: const MaterialApp(
-            home: WatchlistScreen(),
+          child:  const MaterialApp(
+            home: WatchlistScreen(selectedContacts: {},),
           ),
         ));
   }

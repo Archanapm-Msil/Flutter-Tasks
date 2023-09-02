@@ -1,18 +1,14 @@
-
-
 import 'package:contact_app/model/Contact.dart';
 
-abstract class ContactsEvent  {
+abstract class ContactsEvent {
   const ContactsEvent();
 
   @override
   List<Object?> get props => [];
 }
 
-class FetchContacts extends ContactsEvent {
-
-}
-
+// Existing event classes
+class FetchContacts extends ContactsEvent {}
 class OnSortEvent extends ContactsEvent {
   final List<List<Contact>> filteredusers;
   final int currentTabIndex;
@@ -26,4 +22,15 @@ class OnSortEvent extends ContactsEvent {
 
   @override
   List<Object?> get props => [filteredusers, currentTabIndex, selectedSort];
+}
+
+// Add the ContactAddToWatchlistEvent class
+class ContactAddToWatchlistEvent extends ContactsEvent {
+  final List<Contact> selectedContacts;
+  final int tabIndex;
+
+  ContactAddToWatchlistEvent(this.selectedContacts, this.tabIndex);
+
+  @override
+  List<Object?> get props => [selectedContacts, tabIndex];
 }

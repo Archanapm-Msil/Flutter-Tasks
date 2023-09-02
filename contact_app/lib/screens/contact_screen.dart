@@ -2,16 +2,20 @@ import 'package:contact_app/APIServiceManager/contact_api_service.dart';
 import 'package:contact_app/bloc/ContactBloc/contact_bloc.dart';
 import 'package:contact_app/bloc/ContactBloc/contact_event.dart';
 import 'package:contact_app/bloc/ContactBloc/contact_state.dart';
+import 'package:contact_app/bloc/WatchlistBloc/watchlist_bloc.dart';
 import 'package:contact_app/model/Contact.dart';
+import 'package:contact_app/screens/watchlist_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ContactScreen extends StatefulWidget {
   final VoidCallback onBackButtonPressed;
-
+   final int tabIndex;
+  
   const ContactScreen({
     Key? key,
     required this.onBackButtonPressed,
+    required this.tabIndex, 
   }) : super(key: key);
 
   @override
@@ -23,37 +27,68 @@ class _ContactScreenState extends State<ContactScreen>
   List<List<Contact>> allList = [];
   late TabController _tabController;
   late ContactBloc _contactBloc;
-
+  Set<Contact> selectedContacts = Set();
+  int _previouslySelectedTabIndex = 0;
+  int _currentTabIndex = 0;
   String? isSelected;
+  List<Set<Contact>> selectedContactsByTab = [];
+
 
   @override
   void dispose() {
     _tabController.dispose();
-    _contactBloc.close();
     super.dispose();
   }
-
-  // void initState() {
-  //   super.initState();
-  //   final ContactAPI contactApi = ContactAPI();
-  //   _contactBloc = ContactBloc(contactApi);
-  //   _contactBloc.add(FetchContacts());
-  //  _tabController = TabController(
-  //     length: 1,
-  //     vsync: this,
-  //   );  // Initialize with a default length
-  // }
 
   @override
   void initState() {
     super.initState();
-    _contactBloc =
-        BlocProvider.of<ContactBloc>(context); // Initialize ContactBloc
-    _contactBloc.add(FetchContacts()); // Trigger the FetchContacts event
+    _contactBloc = BlocProvider.of<ContactBloc>(context);
+    _contactBloc.add(FetchContacts());
     _tabController = TabController(
       length: 1,
       vsync: this,
     );
+  }
+
+   void _handleBackButton(int tabIndex) {
+  // Send the selected contacts back to the WatchlistScreen.
+  Navigator.pop(context, selectedContacts.toList());
+}
+
+
+   
+
+   void _handleAddToWatchlist() {
+  // Pass the selected contacts to the WatchlistScreen
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => WatchlistScreen(
+        selectedContacts: selectedContacts,
+      ),
+    ),
+  );
+}
+
+
+  void toggleContactSelection(Contact contact) {
+    setState(() {
+      if (selectedContacts.contains(contact)) {
+        selectedContacts.remove(contact);
+      } else {
+        selectedContacts.add(contact);
+      }
+    });
+  }
+
+  void addToWatchlistTab(int tabIndex) {
+    _currentTabIndex = tabIndex;
+    context.read<ContactBloc>().add(
+      ContactAddToWatchlistEvent(selectedContacts.toList(), tabIndex),
+    );
+    selectedContacts.clear();
+    print("added..!!");
   }
 
   @override
@@ -61,15 +96,7 @@ class _ContactScreenState extends State<ContactScreen>
     return Scaffold(
       body: SafeArea(
         child: BlocBuilder<ContactBloc, ContactState>(
-          // Use BlocBuilder to rebuild the UI based on ContactBloc state.
           builder: (context, state) {
-            print(state);
-            // if (state is ContactsLoaded) {
-            //   allList = state.users;
-            //   _tabController =
-            //       TabController(length: state.users.length, vsync: this);
-            // }
-
             if (state is ContactsLoading) {
               return const Center(
                 child: CircularProgressIndicator(),
@@ -83,7 +110,7 @@ class _ContactScreenState extends State<ContactScreen>
             }
 
             if (state is ContactsLoaded) {
-             final tabs = state.users;
+              final tabs = state.users;
               return Column(
                 children: [
                   Container(
@@ -120,7 +147,6 @@ class _ContactScreenState extends State<ContactScreen>
                         TabBar(
                           onTap: (tabIndex) {
                             isSelected = '';
-
                             context.read<ContactBloc>().add(OnSortEvent(
                                 filteredusers: allList,
                                 currentTabIndex: tabIndex,
@@ -158,7 +184,6 @@ class _ContactScreenState extends State<ContactScreen>
   }
 
   List<Widget> _buildTabBarTabs(List<List<Contact>> tabs) {
-    print("tabs...!!");
     return tabs.map((tabItems) {
       return Tab(
         child: Text(
@@ -170,12 +195,12 @@ class _ContactScreenState extends State<ContactScreen>
   }
 
   List<Widget> _buildTabBarViews(List<List<Contact>> tabs, context) {
-    print("tabViews...!!");
     double height = MediaQuery.of(context).size.height;
     String contactNum = "";
     return tabs.asMap().entries.map((entry) {
-      final tabIndex = entry.key; //  the current tab index
-      final tabItems = entry.value; //  list of contacts for the current tab
+      final tabIndex = entry.key;
+      final tabItems = entry.value;
+
       return Stack(
         children: [
           Container(
@@ -184,29 +209,40 @@ class _ContactScreenState extends State<ContactScreen>
               padding: const EdgeInsets.all(20),
               itemCount: tabItems.length,
               itemBuilder: (context, index) {
-                final contact =
-                    tabItems[index]; // Get the current contact for this index
-                return Container(
-                  margin: EdgeInsets.only(bottom: height * 0.01),
-                  padding: const EdgeInsets.only(right: 8, left: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(8.0),
-                    title: Text(
-                      contact.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                final contact = tabItems[index];
+                final isSelected = selectedContacts.contains(contact);
+
+                return GestureDetector(
+                  onTap: () {
+                    toggleContactSelection(contact);
+                  },
+                  child: Container(
+                    margin: EdgeInsets.only(bottom: height * 0.01),
+                    padding: const EdgeInsets.only(right: 8, left: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    subtitle: Text(contact.contacts),
-                    trailing: const CircleAvatar(
-                      backgroundImage: NetworkImage(
-                        'https://via.placeholder.com/150',
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(8.0),
+                      title: Text(
+                        contact.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      radius: 20,
+                      subtitle: Text(contact.contacts),
+                      trailing: isSelected
+                          ? const Icon(
+                              Icons.check_circle,
+                              color: Colors.blue,
+                            )
+                          : const CircleAvatar(
+                              backgroundImage: NetworkImage(
+                                'https://via.placeholder.com/150',
+                              ),
+                              radius: 20,
+                            ),
                     ),
                   ),
                 );
@@ -233,151 +269,10 @@ class _ContactScreenState extends State<ContactScreen>
               ),
               child: IconButton(
                 onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return BlocConsumer<ContactBloc, ContactState>(
-                        listener: (context, state) {
-                          // if (state is ContactsLoaded) {
-                          //   isSelected = state.selectedSort!;
-                          // }
-                        },
-                        builder: (context, state) {
-                          return SizedBox(
-                            height: 200,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                      16.0, 16.0, 16.0, 0),
-                                  child: Row(
-                                    children: [
-                                      const Expanded(
-                                        child: Text(
-                                          'Sort By',
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      GestureDetector(
-                                        onTap: () {
-                                          Navigator.pop(context);
-                                        },
-                                        child: const Padding(
-                                          padding: EdgeInsets.only(right: 16.0),
-                                          child: Text(
-                                            'Done',
-                                            style: TextStyle(
-                                                fontSize: 18,
-                                                color: Colors.blue),
-                                          ),
-                                        ),
-                                      )
-                                    ],
-                                  ),
-                                ),
-                                ListTile(
-                                  title: Row(
-                                    children: [
-                                      const Text('User ID'),
-                                      const Spacer(),
-                                      TextButton(
-                                        onPressed: () {
-                                          context
-                                              .read<ContactBloc>()
-                                              .add(OnSortEvent(
-                                                filteredusers: allList,
-                                                currentTabIndex:
-                                                    _tabController.index,
-                                                selectedSort: 'asc',
-                                              ));
-                                        },
-                                        child: Text(
-                                          '0 \u{2193} 9',
-                                          style: TextStyle(
-                                              color: isSelected == null
-                                                  ? Colors.black
-                                                  : isSelected! == 'asc'
-                                                      ? Colors.blue
-                                                      : Colors.black,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          context
-                                              .read<ContactBloc>()
-                                              .add(OnSortEvent(
-                                                filteredusers: allList,
-                                                currentTabIndex:
-                                                    _tabController.index,
-                                                selectedSort: 'dsc',
-                                              ));
-                                        },
-                                        child: Text(
-                                          '9 \u{2191} 0',
-                                          style: TextStyle(
-                                              color: isSelected == null
-                                                  ? Colors.black
-                                                  : isSelected! == 'dsc'
-                                                      ? Colors.blue
-                                                      : Colors.black,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  onTap: () {
-                                    // Handle User ID sorting action
-                                    Navigator.pop(context);
-                                  },
-                                ),
-                                ListTile(
-                                  title: Row(
-                                    children: [
-                                      const Text('Add to Watchlist'),
-                                      const Spacer(),
-                                      IconButton(
-                                        onPressed: () {
-                                          // Assuming tabItems[index] is the selected contact
-                                          final int selectedTabIndex = tabIndex;
-                                          final Contact selectedContact =
-                                              tabItems[selectedTabIndex];
-
-                                          Navigator.pushNamed(
-                                            context,
-                                            '/watchlist',
-                                            arguments: {
-                                              'contact': selectedContact,
-                                              'tabIndex': tabIndex,
-                                            },
-                                          );
-                                        },
-                                        icon: const Icon(
-                                            Icons.add_circle_outline),
-                                        color: Colors.blueAccent,
-                                      ),
-                                    ],
-                                  ),
-                                  onTap: () {
-                                    // Handle adding to watchlist
-                                    Navigator.pop(context);
-                                  },
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  );
+                  // addToWatchlistTab(tabIndex);
+                  _handleAddToWatchlist();
                 },
-                icon: const Icon(Icons.sort_sharp),
+                icon: const Icon(Icons.add),
                 color: Colors.blueAccent,
               ),
             ),

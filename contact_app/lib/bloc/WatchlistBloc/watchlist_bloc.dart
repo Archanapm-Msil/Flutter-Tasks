@@ -47,11 +47,7 @@ class WatchlistBloc extends Bloc<WatchlistEvent, WatchlistState> {
         users: updatedWatchlists.map((watchlist) => watchlist.contacts).toList(),
       ));
       
-    } else {
-      // Handle the case when the target watchlist is not found (optional)
-      // You can add error handling or other logic here if needed.
-      print("Target watchlist not found for tabName: $tabName");
-    }
+    } 
   }
 });
 
@@ -71,8 +67,6 @@ class WatchlistBloc extends Bloc<WatchlistEvent, WatchlistState> {
     });
 
   on<OnSortEvent>((event, emit) {
-    print("onSort users=====${state.users}");
-  // emit(ContactsLoading());
   if (event.selectedSort == 'asc') {
     emit(FilteredState(
       tabs: state.tabs, 

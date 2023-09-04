@@ -19,15 +19,15 @@ class WatchlistScreen extends StatefulWidget {
 class _WatchlistScreenState extends State<WatchlistScreen> {
   List<Contact>? contactsToSort;
 
-
- @override
-   void initState() {
+  @override
+  void initState() {
     super.initState();
 
     // Initialize state.users with the selectedContacts
     final selectedContacts = widget.selectedContacts.toList();
     context.read<WatchlistBloc>().add(AddToWatchlistEvent(selectedContacts, 0));
   }
+
   void _navigateToContactScreen(int tabIndex) {
     Navigator.push(
       context,
@@ -43,7 +43,9 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
   void _handleBackButton(int tabIndex) {
     final selectedContacts = widget.selectedContacts.toList();
 
-    context.read<WatchlistBloc>().add(AddToWatchlistEvent(selectedContacts, tabIndex));
+    context
+        .read<WatchlistBloc>()
+        .add(AddToWatchlistEvent(selectedContacts, tabIndex));
 
     Navigator.pop(context);
   }
@@ -54,87 +56,107 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
 
     return BlocBuilder<WatchlistBloc, WatchlistState>(
       builder: (context, state) {
-        return DefaultTabController(
-          length: state.tabs.length,
-          child: Scaffold(
-            appBar: AppBar(
-              title: const Text('Watchlist App'),
-              bottom: TabBar(
-                tabs: state.tabs.map((tabName) => Tab(text: tabName)).toList(),
+        return Stack(
+          children: [DefaultTabController(
+            length: state.tabs.length,
+            child: Scaffold(
+              appBar: AppBar(
+                title: const Text('Watchlist App'),
+                bottom: TabBar(
+                  tabs: state.tabs.map((tabName) => Tab(text: tabName)).toList(),
+                ),
+              ),
+              body: TabBarView(
+                children: state.tabs.map((tabName) {
+                  final tabIndex = state.tabs.indexOf(tabName);
+                  contactsToSort =
+                      state.users.isNotEmpty ? state.users[tabIndex] : [];
+        
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (widget.selectedContacts.isEmpty)
+                          ElevatedButton(
+                            onPressed: () => _navigateToContactScreen(tabIndex),
+                            child: const Text('Add Contacts'),
+                          )
+                        else
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: ListView.builder(
+                                    itemCount: widget.selectedContacts.length,
+                                    itemBuilder: (context, index) {
+                                      final contact = state is FilteredState
+                                          ? state.filteredUsers[tabIndex][index]
+                                          : widget.selectedContacts
+                                              .elementAt(index);
+                                      return Container(
+                                        margin: EdgeInsets.only(
+                                            bottom: height * 0.01),
+                                        padding: const EdgeInsets.only(
+                                            right: 8, left: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: ListTile(
+                                          contentPadding:
+                                              const EdgeInsets.all(8.0),
+                                          title: Text(
+                                            contact.name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          subtitle: Text(contact.contacts),
+                                          trailing: const CircleAvatar(
+                                            backgroundImage: NetworkImage(
+                                              'https://via.placeholder.com/150',
+                                            ),
+                                            radius: 20,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                 Align(
+                                    alignment: Alignment.center,
+                                    child: Container(
+                                      height: 50,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade300,
+                                          shape: BoxShape.rectangle,
+                                        ),
+                                        child: _sortContacts(tabIndex))),
+                                ElevatedButton(
+                                  onPressed: () =>
+                                      _navigateToContactScreen(tabIndex),
+                                  child: const Text('Add Contacts'),
+                                ),
+                                const SizedBox(height: 20),
+                               
+                              ],
+            
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+              floatingActionButton: FloatingActionButton(
+                onPressed: () =>
+                    _showAddTabBottomSheetDialog(context, state.tabs.length),
+                child: const Icon(Icons.add),
               ),
             ),
-            body: TabBarView(
-              children: state.tabs.map((tabName) {
-                final tabIndex = state.tabs.indexOf(tabName);
-                contactsToSort = state.users.isNotEmpty ? state.users[tabIndex] : [];
-
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (widget.selectedContacts.isEmpty)
-                        ElevatedButton(
-                          onPressed: () => _navigateToContactScreen(tabIndex),
-                          child: const Text('Add Contacts'),
-                        )
-                      else
-                        Expanded(
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: ListView.builder(
-                                  itemCount: widget.selectedContacts.length,
-                                  itemBuilder: (context, index) {
-                                    print(state);
-                                    final contact = state is FilteredState ? state.filteredUsers[tabIndex][index]: widget.selectedContacts.elementAt(index);
-                                    return Container(
-                                      margin: EdgeInsets.only(bottom: height * 0.01),
-                                      padding: const EdgeInsets.only(right: 8, left: 8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: ListTile(
-                                        contentPadding: const EdgeInsets.all(8.0),
-                                        title: Text(
-                                          contact.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        subtitle: Text(contact.contacts),
-                                        trailing: const CircleAvatar(
-                                          backgroundImage: NetworkImage(
-                                            'https://via.placeholder.com/150',
-                                          ),
-                                          radius: 20,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => _navigateToContactScreen(tabIndex),
-                                child: const Text('Add Contacts'),
-                              ),
-                              const SizedBox(height: 20),
-                              _sortContacts(tabIndex),
-                            ],
-                          ),
-                        ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () => _showAddTabBottomSheetDialog(context, state.tabs.length),
-              child: const Icon(Icons.add),
-            ),
           ),
-        );
+        ]);
       },
     );
   }
@@ -154,143 +176,142 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
   }
 
   IconButton _sortContacts(int tabIndex) {
-  String? isSelected;
+    String? isSelected;
 
-  return IconButton(
-    onPressed: () {
-      showModalBottomSheet(
-        context: context,
-        builder: (BuildContext context) {
-          return BlocConsumer<WatchlistBloc, WatchlistState>(
-            listener: (context, state) {
-              if (state is FilteredState) {
-                isSelected = state.selectedSort;
-              }
-            },
-            builder: (context, state) {
-              return SizedBox(
-                height: 200,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
-                      child: Row(
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              'Sort By',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Padding(
-                              padding: EdgeInsets.only(right: 16.0),
+    return IconButton(
+      onPressed: () {
+        showModalBottomSheet(
+          context: context,
+          builder: (BuildContext context) {
+            return BlocConsumer<WatchlistBloc, WatchlistState>(
+              listener: (context, state) {
+                if (state is FilteredState) {
+                  isSelected = state.selectedSort;
+                }
+              },
+              builder: (context, state) {
+                return SizedBox(
+                  height: 200,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
+                        child: Row(
+                          children: [
+                            const Expanded(
                               child: Text(
-                                'Done',
+                                'Sort By',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
                                 ),
                               ),
                             ),
-                          )
-                        ],
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pop(context);
+                              },
+                              child: const Padding(
+                                padding: EdgeInsets.only(right: 16.0),
+                                child: Text(
+                                  'Done',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ),
+                            )
+                          ],
+                        ),
                       ),
-                    ),
-                    ListTile(
-                      title: Row(
-                        children: [
-                          const Text('User ID'),
-                          const Spacer(),
-                          TextButton(
-                            onPressed: () {
-                              // Sort in ascending order
-                              print("USER====================${state.users}");
-                              context.read<WatchlistBloc>().add(OnSortEvent(
-                                filteredusers: state.users.map((list) {
-                                  if (list.isEmpty || list != state.users[tabIndex]) {
-                                    return list;
-                                  }
-                                  final sortedList = List.of(list)
-                                    ..sort((a, b) => int.parse(a.id).compareTo(int.parse(b.id)));
-                                    print("Sorted list ======${sortedList}");
-                                  return sortedList;
-                                }).toList(),
-                                currentTabIndex: tabIndex,
-                                selectedSort: 'asc',
-                              ));
-                              
-                            },
-                            child: Text(
-                              '0 \u{2193} 9',
-                              style: TextStyle(
-                                color: isSelected == null
-                                    ? Colors.black
-                                    : isSelected == 'asc'
-                                        ? Colors.blue
-                                        : Colors.black,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                      ListTile(
+                        title: Row(
+                          children: [
+                            const Text('User ID'),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () {
+                                // Sort in ascending order
+                                context.read<WatchlistBloc>().add(OnSortEvent(
+                                      filteredusers: state.users.map((list) {
+                                        if (list.isEmpty ||
+                                            list != state.users[tabIndex]) {
+                                          return list;
+                                        }
+                                        final sortedList = List.of(list)
+                                          ..sort((a, b) => int.parse(a.id)
+                                              .compareTo(int.parse(b.id)));
+                                        return sortedList;
+                                      }).toList(),
+                                      currentTabIndex: tabIndex,
+                                      selectedSort: 'asc',
+                                    ));
+                              },
+                              child: Text(
+                                '0 \u{2193} 9',
+                                style: TextStyle(
+                                  color: isSelected == null
+                                      ? Colors.black
+                                      : isSelected == 'asc'
+                                          ? Colors.blue
+                                          : Colors.black,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              // Sort in descending order
-                              context.read<WatchlistBloc>().add(OnSortEvent(
-                                filteredusers: state.users.map((list) {
-                                  if (list.isEmpty || list != state.users[tabIndex]) {
-                                    return list;
-                                  }
-                                  final sortedList = List.of(list)
-                                    ..sort((a, b) => int.parse(b.id).compareTo(int.parse(a.id)));
-                                  return sortedList;
-                                }).toList(),
-                                currentTabIndex: tabIndex,
-                                selectedSort: 'dsc',
-                              ));
-                            },
-                            child: Text(
-                              '9 \u{2191} 0',
-                              style: TextStyle(
-                                color: isSelected == null
-                                    ? Colors.black
-                                    : isSelected == 'dsc'
-                                        ? Colors.blue
-                                        : Colors.black,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                            TextButton(
+                              onPressed: () {
+                                // Sort in descending order
+                                context.read<WatchlistBloc>().add(OnSortEvent(
+                                      filteredusers: state.users.map((list) {
+                                        if (list.isEmpty ||
+                                            list != state.users[tabIndex]) {
+                                          return list;
+                                        }
+                                        final sortedList = List.of(list)
+                                          ..sort((a, b) => int.parse(b.id)
+                                              .compareTo(int.parse(a.id)));
+                                        return sortedList;
+                                      }).toList(),
+                                      currentTabIndex: tabIndex,
+                                      selectedSort: 'dsc',
+                                    ));
+                              },
+                              child: Text(
+                                '9 \u{2191} 0',
+                                style: TextStyle(
+                                  color: isSelected == null
+                                      ? Colors.black
+                                      : isSelected == 'dsc'
+                                          ? Colors.blue
+                                          : Colors.black,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
                       ),
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      );
-    },
-    icon: const Icon(Icons.sort),
-    color: Colors.black,
-  );
-}
-
-
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+      icon: const Icon(Icons.sort),
+      color: Colors.black,
+    );
+  }
 }
 
 class _AddTabBottomSheet extends StatefulWidget {

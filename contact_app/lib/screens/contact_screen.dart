@@ -79,7 +79,6 @@ class _ContactScreenState extends State<ContactScreen>
       ContactAddToWatchlistEvent(selectedContacts.toList(), tabIndex),
     );
     selectedContacts.clear();
-    print("added..!!");
   }
 
   @override
@@ -138,10 +137,7 @@ class _ContactScreenState extends State<ContactScreen>
                         TabBar(
                           onTap: (tabIndex) {
                             isSelected = '';
-                            context.read<ContactBloc>().add(OnSortEvent(
-                                filteredusers: allList,
-                                currentTabIndex: tabIndex,
-                                selectedSort: 'asc'));
+                            
                           },
                           controller: _tabController,
                           isScrollable: true,

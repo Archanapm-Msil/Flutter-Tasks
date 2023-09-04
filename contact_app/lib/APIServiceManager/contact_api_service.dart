@@ -12,14 +12,11 @@ Future<List<Contact>> getUsers() async {
     final response = await http.get(Uri.parse(url)); 
     if (response.statusCode == 200) {
       final List<Contact> contacts = parseContacts(response.body);
-      print('Data fetched successfully: $contacts');
       return contacts;
     } else {
-      print('Failed to fetch data: ${response.statusCode}');
       throw Exception('Failed to load data');
     }
   } catch (e) {
-    print('Error fetching data: $e');
     throw Exception('Error fetching data');
   }
 }

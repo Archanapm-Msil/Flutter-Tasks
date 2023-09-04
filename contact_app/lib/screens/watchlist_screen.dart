@@ -1,4 +1,6 @@
 import 'package:contact_app/bloc/WatchlistBloc/watchlist_bloc.dart';
+import 'package:contact_app/bloc/WatchlistBloc/watchlist_event.dart';
+import 'package:contact_app/bloc/WatchlistBloc/watchlist_state.dart';
 import 'package:contact_app/model/Contact.dart';
 import 'package:contact_app/screens/contact_screen.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +17,17 @@ class WatchlistScreen extends StatefulWidget {
 }
 
 class _WatchlistScreenState extends State<WatchlistScreen> {
+  List<Contact>? contactsToSort;
+
+
+ @override
+   void initState() {
+    super.initState();
+
+    // Initialize state.users with the selectedContacts
+    final selectedContacts = widget.selectedContacts.toList();
+    context.read<WatchlistBloc>().add(AddToWatchlistEvent(selectedContacts, 0));
+  }
   void _navigateToContactScreen(int tabIndex) {
     Navigator.push(
       context,
@@ -28,19 +41,15 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
   }
 
   void _handleBackButton(int tabIndex) {
-    // Access selectedContacts from the widget property
-    final selectedContacts = widget.selectedContacts;
+    final selectedContacts = widget.selectedContacts.toList();
 
-    // Send the selected contacts back to the WatchlistBloc.
-    context
-        .read<WatchlistBloc>()
-        .add(AddToWatchlistEvent(selectedContacts.toList(), tabIndex));
+    context.read<WatchlistBloc>().add(AddToWatchlistEvent(selectedContacts, tabIndex));
+
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    print("Selected Contacts in WatchlistScreen: ${widget.selectedContacts}");
     double height = MediaQuery.of(context).size.height;
 
     return BlocBuilder<WatchlistBloc, WatchlistState>(
@@ -57,7 +66,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
             body: TabBarView(
               children: state.tabs.map((tabName) {
                 final tabIndex = state.tabs.indexOf(tabName);
-                final watchlist = state.watchlists.elementAt(tabIndex);
+                contactsToSort = state.users.isNotEmpty ? state.users[tabIndex] : [];
 
                 return Center(
                   child: Column(
@@ -70,38 +79,48 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
                         )
                       else
                         Expanded(
-                          child: ListView.builder(
-                            itemCount: widget.selectedContacts.length,
-                            itemBuilder: (context, index) {
-                              final contact =
-                                  widget.selectedContacts.elementAt(index);
-
-                              return Container(
-                                margin: EdgeInsets.only(bottom: height * 0.01),
-                                padding:
-                                    const EdgeInsets.only(right: 8, left: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(10),
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: ListView.builder(
+                                  itemCount: widget.selectedContacts.length,
+                                  itemBuilder: (context, index) {
+                                    print(state);
+                                    final contact = state is FilteredState ? state.filteredUsers[tabIndex][index]: widget.selectedContacts.elementAt(index);
+                                    return Container(
+                                      margin: EdgeInsets.only(bottom: height * 0.01),
+                                      padding: const EdgeInsets.only(right: 8, left: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: ListTile(
+                                        contentPadding: const EdgeInsets.all(8.0),
+                                        title: Text(
+                                          contact.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        subtitle: Text(contact.contacts),
+                                        trailing: const CircleAvatar(
+                                          backgroundImage: NetworkImage(
+                                            'https://via.placeholder.com/150',
+                                          ),
+                                          radius: 20,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.all(8.0),
-                                  title: Text(
-                                    contact.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  subtitle: Text(contact.contacts),
-                                  trailing: const CircleAvatar(
-                                    backgroundImage: NetworkImage(
-                                      'https://via.placeholder.com/150',
-                                    ),
-                                    radius: 20,
-                                  ),
-                                ),
-                              );
-                            },
+                              ),
+                              ElevatedButton(
+                                onPressed: () => _navigateToContactScreen(tabIndex),
+                                child: const Text('Add Contacts'),
+                              ),
+                              const SizedBox(height: 20),
+                              _sortContacts(tabIndex),
+                            ],
                           ),
                         ),
                       const SizedBox(height: 20),
@@ -111,8 +130,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
               }).toList(),
             ),
             floatingActionButton: FloatingActionButton(
-              onPressed: () =>
-                  _showAddTabBottomSheetDialog(context, state.tabs.length),
+              onPressed: () => _showAddTabBottomSheetDialog(context, state.tabs.length),
               child: const Icon(Icons.add),
             ),
           ),
@@ -127,7 +145,6 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
       builder: (BuildContext context) {
         return _AddTabBottomSheet(
           onTabAdded: () {
-            // After adding the tab, navigate to the ContactScreen
             Navigator.pop(context);
             _navigateToContactScreen(tabIndex);
           },
@@ -136,84 +153,144 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
     );
   }
 
-  List<Widget> _buildTabBarViews(List<List<Contact>> tabs, context) {
-    double height = MediaQuery.of(context).size.height;
-    String contactNum = "";
+  IconButton _sortContacts(int tabIndex) {
+  String? isSelected;
 
-    return tabs.asMap().entries.map((entry) {
-      final tabIndex = entry.key;
-      final tabItems = entry.value;
-      final List<Contact> selectedContacts = widget.selectedContacts.toList();
-
-      return Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(color: Colors.grey.shade200),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: selectedContacts.length,
-              itemBuilder: (context, index) {
-                final contact = selectedContacts[index];
-
-                return Container(
-                  margin: EdgeInsets.only(bottom: height * 0.01),
-                  padding: const EdgeInsets.only(right: 8, left: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(8.0),
-                    title: Text(
-                      contact.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
+  return IconButton(
+    onPressed: () {
+      showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return BlocConsumer<WatchlistBloc, WatchlistState>(
+            listener: (context, state) {
+              if (state is FilteredState) {
+                isSelected = state.selectedSort;
+              }
+            },
+            builder: (context, state) {
+              return SizedBox(
+                height: 200,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Sort By',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.only(right: 16.0),
+                              child: Text(
+                                'Done',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ),
+                          )
+                        ],
                       ),
                     ),
-                    subtitle: Text(contact.contacts),
-                    trailing: const CircleAvatar(
-                      backgroundImage: NetworkImage(
-                        'https://via.placeholder.com/150',
+                    ListTile(
+                      title: Row(
+                        children: [
+                          const Text('User ID'),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () {
+                              // Sort in ascending order
+                              print("USER====================${state.users}");
+                              context.read<WatchlistBloc>().add(OnSortEvent(
+                                filteredusers: state.users.map((list) {
+                                  if (list.isEmpty || list != state.users[tabIndex]) {
+                                    return list;
+                                  }
+                                  final sortedList = List.of(list)
+                                    ..sort((a, b) => int.parse(a.id).compareTo(int.parse(b.id)));
+                                    print("Sorted list ======${sortedList}");
+                                  return sortedList;
+                                }).toList(),
+                                currentTabIndex: tabIndex,
+                                selectedSort: 'asc',
+                              ));
+                              
+                            },
+                            child: Text(
+                              '0 \u{2193} 9',
+                              style: TextStyle(
+                                color: isSelected == null
+                                    ? Colors.black
+                                    : isSelected == 'asc'
+                                        ? Colors.blue
+                                        : Colors.black,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              // Sort in descending order
+                              context.read<WatchlistBloc>().add(OnSortEvent(
+                                filteredusers: state.users.map((list) {
+                                  if (list.isEmpty || list != state.users[tabIndex]) {
+                                    return list;
+                                  }
+                                  final sortedList = List.of(list)
+                                    ..sort((a, b) => int.parse(b.id).compareTo(int.parse(a.id)));
+                                  return sortedList;
+                                }).toList(),
+                                currentTabIndex: tabIndex,
+                                selectedSort: 'dsc',
+                              ));
+                            },
+                            child: Text(
+                              '9 \u{2191} 0',
+                              style: TextStyle(
+                                color: isSelected == null
+                                    ? Colors.black
+                                    : isSelected == 'dsc'
+                                        ? Colors.blue
+                                        : Colors.black,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      radius: 20,
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
                     ),
-                  ),
-                );
-              },
-            ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.rectangle,
-                borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(10),
-                    bottomLeft: Radius.circular(10)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.5),
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                onPressed: () {
-                  // addToWatchlistTab(tabIndex);
-                  // _handleAddToWatchlist();
-                },
-                icon: const Icon(Icons.add),
-                color: Colors.blueAccent,
-              ),
-            ),
-          ),
-        ],
+                  ],
+                ),
+              );
+            },
+          );
+        },
       );
-    }).toList();
-  }
+    },
+    icon: const Icon(Icons.sort),
+    color: Colors.black,
+  );
+}
+
+
 }
 
 class _AddTabBottomSheet extends StatefulWidget {

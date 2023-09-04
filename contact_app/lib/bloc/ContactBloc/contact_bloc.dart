@@ -26,10 +26,6 @@ class ContactBloc extends Bloc<ContactsEvent, ContactState> {
       }
     });
 
-    on<OnSortEvent>((event, emit) {
-      // Handle sorting event if needed.
-    });
-
     on<ContactAddToWatchlistEvent>((event, emit) {
       final selectedContacts = event.selectedContacts;
       final tabIndex = event.tabIndex;

@@ -10,7 +10,7 @@ class ContactsLoading extends ContactState {
 
 class ContactsLoaded extends ContactState {
   final List<List<Contact>> users;
-  final List<String> tabs; // Define the 'tabs' property here
+  final List<String> tabs; 
 
   ContactsLoaded(this.users, this.tabs);
 }

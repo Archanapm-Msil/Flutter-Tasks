@@ -51,16 +51,7 @@ class _ContactScreenState extends State<ContactScreen>
     );
   }
 
-   void _handleBackButton(int tabIndex) {
-  // Send the selected contacts back to the WatchlistScreen.
-  Navigator.pop(context, selectedContacts.toList());
-}
-
-
-   
-
    void _handleAddToWatchlist() {
-  // Pass the selected contacts to the WatchlistScreen
   Navigator.push(
     context,
     MaterialPageRoute(

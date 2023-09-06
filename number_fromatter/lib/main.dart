@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:number_fromatter/number_formatter_widget.dart';
 
-
-
 void main() {
   runApp(const MyApp());
 }
@@ -24,5 +22,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-

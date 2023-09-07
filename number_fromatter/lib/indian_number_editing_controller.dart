@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:number_fromatter/input_done_view.dart';
 
-class IndianNumberInput extends StatelessWidget {
+class IndianNumberInput extends StatefulWidget {
   final TextEditingController controller;
 
-  IndianNumberInput({required this.controller});
+  const IndianNumberInput({super.key, required this.controller});
+
+  @override
+  State<IndianNumberInput> createState() => _IndianNumberInputState();
+}
+
+class _IndianNumberInputState extends State<IndianNumberInput> {
+  FocusNode numberFocusNode = FocusNode();
 
   String _formatIndianNumber(String value) {
     if (value.isEmpty) {
@@ -33,6 +41,25 @@ class IndianNumberInput extends StatelessWidget {
   }
 
   @override
+  void initState() {
+    numberFocusNode.addListener(() {
+      bool hasFocus = numberFocusNode.hasFocus;
+      if(hasFocus) {
+        KeyboardOverlay.showOverlay(context);
+      } else{
+        KeyboardOverlay.removeOverlay();
+      }
+    });
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    numberFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -42,8 +69,9 @@ class IndianNumberInput extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: TextField(
+          focusNode: numberFocusNode,
           textAlign: TextAlign.center,
-          controller: controller,
+          controller: widget.controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: const InputDecoration(
             hintText: '₹ 0',
@@ -54,7 +82,6 @@ class IndianNumberInput extends StatelessWidget {
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
-          textInputAction: TextInputAction.done,
           onSubmitted: (_) {
             FocusScope.of(context).unfocus();
           },
@@ -65,9 +92,10 @@ class IndianNumberInput extends StatelessWidget {
             if (formattedValue.isNotEmpty) {
               formattedValue = _formatIndianNumber(formattedValue);
             }
-            controller.value = TextEditingValue(
+            widget.controller.value = TextEditingValue(
               text: formattedValue.isNotEmpty ? '₹$formattedValue' : '',
-              selection: TextSelection.collapsed(offset: formattedValue.length + 1),
+              selection:
+                  TextSelection.collapsed(offset: formattedValue.length + 1),
             );
           },
         ),

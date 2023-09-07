@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:number_fromatter/input_done_view.dart';
 
@@ -40,13 +42,15 @@ class _IndianNumberInputState extends State<IndianNumberInput> {
     return result + lastDigit + decimalPart;
   }
 
-  @override
+   @override
   void initState() {
     numberFocusNode.addListener(() {
       bool hasFocus = numberFocusNode.hasFocus;
-      if(hasFocus) {
-        KeyboardOverlay.showOverlay(context);
-      } else{
+      if (hasFocus) {
+        if (Platform.isIOS) {
+          KeyboardOverlay.showOverlay(context);
+        }
+      } else {
         KeyboardOverlay.removeOverlay();
       }
     });

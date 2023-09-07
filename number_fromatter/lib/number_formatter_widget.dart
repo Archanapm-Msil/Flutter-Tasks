@@ -38,7 +38,7 @@ class _NumberFormatterWidgetState extends State<NumberFormatterWidget> {
                 ),
                 const SizedBox(height: 8.0),
                 IndianNumberInput(
-                    controller: controller), // Use IndianNumberInput here
+                    controller: controller), 
               ],
             ),
           ),
